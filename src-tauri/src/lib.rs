@@ -138,11 +138,11 @@ fn scan_recursive(
                 .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
                 .map(|d| d.as_secs());
 
-            children.push(FileNode {
-                name: path
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or_default(),
+        children.push(FileNode {
+            name: path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| path.to_string_lossy().to_string()),
                 path: path.to_string_lossy().to_string(),
                 size,
                 is_dir: false,
