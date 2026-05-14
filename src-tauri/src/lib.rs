@@ -36,10 +36,14 @@ async fn scan_directory(path: String, max_depth: Option<usize>) -> Result<ScanRe
         return Err(format!("Path is not a directory: {}", path));
     }
 
-    let mut total_files: u64 = 0;
-    let mut total_dirs: u64 = 0;
-
-    let root = scan_recursive(&root_path, max_depth, 0, &mut total_files, &mut total_dirs)?;
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let mut total_files: u64 = 0;
+        let mut total_dirs: u64 = 0;
+        let root = scan_recursive(&root_path, max_depth, 0, &mut total_files, &mut total_dirs)?;
+        Ok::<_, String>((root, total_files, total_dirs))
+    })
+    .await
+    .map_err(|e| format!("scan task failed: {}", e))??;
 
     let elapsed = start
         .elapsed()
@@ -47,10 +51,10 @@ async fn scan_directory(path: String, max_depth: Option<usize>) -> Result<ScanRe
         .unwrap_or(0);
 
     Ok(ScanResult {
-        total_size: root.size,
-        root,
-        total_files,
-        total_dirs,
+        total_size: result.0.size,
+        root: result.0,
+        total_files: result.1,
+        total_dirs: result.2,
         elapsed_ms: elapsed,
     })
 }
